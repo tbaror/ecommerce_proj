@@ -2,12 +2,13 @@
 
 
 <nav class="navbar navbar-expand-md navbar-light bg-dark">
-      <a href="#" class="navbar-brand"><i class="fas fa-store fa-2x text-warning"></i></a>
+      <a href="/" class="navbar-brand"><i class="fas fa-store fa-2x text-warning"></i></a>
       <button class="navbar-toggler bg-light" data-toggle="collapse" data-target="#nav" name=""><span class="navbar-toggler-icon"></span "></button>
       <div class="collapse navbar-collapse justify-content-between" id="nav">
       <ul class="navbar-nav dropdown">
           <li class="nav-item"><a data-toggle="dropdown" href="" class="nav-link text-light text-uppercase font-weight-bold px-3 dropdown-toggle">Categories</a>
         <div class="dropdown-menu">
+         <a href="{% url 'home'%}" class="dropdown-item">All Products</a>
         {% for category in links  %}
             <a href="{{category.get_url}}" class="dropdown-item">{{category.name}}</a>
             
