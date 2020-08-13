@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404
 from django.http import HttpResponse
-from.models import Category, Product 
+from.models import Category, Product, Cart, CartItem 
 
 # Create your views here.
 
@@ -24,5 +24,13 @@ def productPage(request, category_slug, product_slug):
 
 
 
-def cart(request):
-    return render(request, 'cart.html')
+def _card_id(request):
+    cart = request.session.session_key
+    if not cart:
+        cart = request.session.craete()
+    return cart
+
+def add_cart(request, product_id):
+    product = Product.objects.get(id=product_id)
+    try:
+        cart = Cart.objects.get(cart_id=_card_id(request))
