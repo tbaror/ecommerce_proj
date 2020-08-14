@@ -28,7 +28,7 @@ Cart
   <div class="col-12 col-sm-12 col-md-12 col-lg-6 text-center">
 <table class="table cart_table">
     <thead class="cart_thead">
-        {% for i in '123' %}
+        {% for cart_item in cart_items %}
         <tr>
             <th colspan="4">
                 Your items
@@ -37,21 +37,24 @@ Cart
     </thead>
     <tr>
         <td>
-            <a href=""><img src="{% static 'img/product-1.png' %}" height="100" width="100" alt=""></a>
+            <a href="cart_item.product.get_url">
+                <img src="{{cart_item.product.image.url}}" height="100" width="100" alt=""></a>
         </td>
 
         <td class="text-left">
-            Galaxy s9
+            {{cart_item.product.name}}
             <br>
-            SKU: 5
+            SKU: {{cart_item.product.id}}
             <br>
-            Unit Price : $100
+            Unit Price : ${{cart_item.product.price}}
             <br>
-            Qty: 2 x $100
+            Qty:{{cart_item.quantity}} x ${{cart_item.product.price}}
         </td>
         <td>
-            $200
+            ${{cart_item.subtotal}}
         </td>
+        {% if cart_item.quantity < cart_item.product.stock %}
+        {% else %}{% endif %}
         <td>
             &nbsp;<a href=""><i class="fas fa-plus-circle cart_icon"></i></a>
             &nbsp;<a href=""><i class="fas fa-minus-circle cart_icon"></i></a>
