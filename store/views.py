@@ -2,6 +2,9 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from.models import Category, Product, Cart, CartItem
 from django.core.exceptions import ObjectDoesNotExist
+import stripe
+from django.conf import settings
+
 
 # Create your views here.
 
@@ -56,6 +59,7 @@ def add_cart(request, product_id):
         cart_item.save()
     return redirect('cart_detail')
 
+#cart detail
 def cart_detail(request, total=0, counter=0, cart_items = None):
     try:
         cart = Cart.objects.get(cart_id= _card_id(request))
@@ -65,7 +69,29 @@ def cart_detail(request, total=0, counter=0, cart_items = None):
             counter += cart_item.quantity
     except ObjectDoesNotExist:
         pass
-    return render(request, 'cart.html', dict(cart_items=cart_items, total=total, counter=counter))
+
+    stripe.api_key = settings.STRIPE_SECRET_KEY
+    stripe_total = int(total * 100)
+    description = 'Z-Store - New Order'
+    data_key = settings.STRIPE_PUBLISHABLE_KEY
+    if request.method == 'POST':
+        try:
+            token = request.POST['stripeToken']
+            email = request.POST['stripeEmail']
+            customer = stripe.Customer.create(
+                email=email,
+                source=token
+            )
+            charge = stripe.Charge.create(
+                amount=stripe_total,
+                currency='usd',
+                description = description,
+                customer=customer.id
+            )
+        except stripe.error.CardError as e:
+            return False, e
+
+    return render(request, 'cart.html', dict(cart_items=cart_items, total=total, counter=counter, data_key = data_key, stripe_total = stripe_total, description=description,))
 
 def cart_remove(request, product_id):
     cart = Cart.objects.get(cart_id=_card_id(request))
