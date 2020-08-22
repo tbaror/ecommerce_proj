@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
-from.models import Category, Product, Cart, CartItem
+from.models import Category, Product, Cart, CartItem, Order, OrderItem
 from django.core.exceptions import ObjectDoesNotExist
 import stripe
 from django.conf import settings
@@ -60,9 +60,9 @@ def add_cart(request, product_id):
     return redirect('cart_detail')
 
 #cart detail
-def cart_detail(request, total=0, counter=0, cart_items = None):
+def cart_detail(request, total=0, counter=0, cart_items=None):
     try:
-        cart = Cart.objects.get(cart_id= _card_id(request))
+        cart = Cart.objects.get(cart_id=_card_id(request))
         cart_items = CartItem.objects.filter(cart=cart, active=True)
         for cart_item in cart_items:
             total += (cart_item.product.price * cart_item.quantity)
@@ -78,6 +78,16 @@ def cart_detail(request, total=0, counter=0, cart_items = None):
         try:
             token = request.POST['stripeToken']
             email = request.POST['stripeEmail']
+            billingName = request.POST['stripeBillingName']
+            billingAddress1 = request.POST['stripeBillingAddressLine1']
+            billingCity = request.POST['stripeBillingAddressCity']
+            billingPostcode = request.POST['stripeBillingAddressZip']
+            billingCountry = request.POST['stripeBillingAddressCountryCode']
+            shippingName = request.POST['stripeShippingName']
+            shippingAddress1 = request.POST['stripeShippingAddressLine1']
+            shippingCity = request.POST['stripeShippingAddressCity']
+            shippingPostcode = request.POST['stripeShippingAddressZip']
+            shippingCountry = request.POST['stripeShippingAddressCountryCode']
             customer = stripe.Customer.create(
                 email=email,
                 source=token
@@ -85,13 +95,59 @@ def cart_detail(request, total=0, counter=0, cart_items = None):
             charge = stripe.Charge.create(
                 amount=stripe_total,
                 currency='usd',
-                description = description,
+                description=description,
                 customer=customer.id
             )
+            # Creating the order
+            try:
+                order_details = Order.objects.create(
+                    token=token,
+                    total=total,
+                    emailAddress=email,
+                    billingName=billingName,
+                    billingAddress1=billingAddress1,
+                    billingCity=billingCity,
+                    billingPostcode=billingPostcode,
+                    billingCountry=billingCountry,
+                    shippingName=shippingName,
+                    shippingAddress1=shippingAddress1,
+                    shippingCity=shippingCity,
+                    shippingPostcode=shippingPostcode,
+                    shippingCountry=shippingCountry
+                )
+                order_details.save()
+                for order_item in cart_items:
+                    or_item = OrderItem.objects.create(
+                        product=order_item.product.name,
+                        quantity=order_item.quantity,
+                        price=order_item.product.price,
+                        order=order_details
+                    )
+                    or_item.save()
+
+                    # reduce stock
+                    products = Product.objects.get(id=order_item.product.id)
+                    products.stock = int(order_item.product.stock - order_item.quantity)
+                    products.save()
+                    order_item.delete()
+
+                    # print a message when the order is created
+                    print('the order has been created')
+                try:
+                    #sendEmail(order_details.id)
+                    print('The order email has been sent')
+                except IOError as e:
+                    return e
+
+                return redirect('thanks_page', order_details.id)
+            except ObjectDoesNotExist:
+                pass
+
         except stripe.error.CardError as e:
             return False, e
 
-    return render(request, 'cart.html', dict(cart_items=cart_items, total=total, counter=counter, data_key = data_key, stripe_total = stripe_total, description=description,))
+    return render(request, 'cart.html', dict(cart_items=cart_items, total=total, counter=counter, data_key=data_key, stripe_total=stripe_total, description=description))
+
 
 def cart_remove(request, product_id):
     cart = Cart.objects.get(cart_id=_card_id(request))

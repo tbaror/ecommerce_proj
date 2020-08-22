@@ -1,5 +1,7 @@
 from django.db import models
 from django.urls import reverse
+from django.contrib.auth.models import User
+
 
 # Create your models here.
 # Model: Category
@@ -19,7 +21,10 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+
 # Model: Product
+
+
 class Product(models.Model):
     name = models.CharField(max_length=250, unique=True)
     slug = models.SlugField(max_length=250, unique=True)
@@ -31,17 +36,21 @@ class Product(models.Model):
     available = models.BooleanField(default=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
+
     class Meta:
         ordering = ('name',)
         verbose_name = 'product'
         verbose_name_plural = 'products'
 
     def get_url(self):
-        return reverse('product_detail', args=[self.category.slug, self.slug])    
+        return reverse('product_detail', args=[self.category.slug, self.slug])
 
     def __str__(self):
         return self.name
-#Model: Cart
+
+# Model: Cart
+
+
 class Cart(models.Model):
     cart_id = models.CharField(max_length=250, blank=True)
     date_added = models.DateField(auto_now_add=True)
@@ -49,10 +58,10 @@ class Cart(models.Model):
     class Meta:
         db_table = 'Cart'
         ordering = ['date_added']
-    
 
     def __str__(self):
         return self.cart_id
+
 
 class CartItem(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
@@ -64,19 +73,18 @@ class CartItem(models.Model):
         db_table = 'CartItem'
 
     def sub_total(self):
-        return self.price * self.quantity
-
-    
+        return self.product.price * self.quantity
 
     def __str__(self):
         return self.product
 
-
 # Model: Order
+
+
 class Order(models.Model):
     token = models.CharField(max_length=250, blank=True)
-    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='USD Total')
-    emailAddress = models.CharField(max_length=250, blank=True, verbose_name='Email Address')
+    total = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='USD Order Total')
+    emailAddress = models.EmailField(max_length=250, blank=True, verbose_name='Email Address')
     created = models.DateTimeField(auto_now_add=True)
     billingName = models.CharField(max_length=250, blank=True)
     billingAddress1 = models.CharField(max_length=250, blank=True)
@@ -94,20 +102,22 @@ class Order(models.Model):
         ordering = ['-created']
 
     def __str__(self):
-        return self.id
+        return str(self.id)
 
-def OrderItem(self):
+
+class OrderItem(models.Model):
     product = models.CharField(max_length=250)
     quantity = models.IntegerField()
-    price = decimal.DecimalField(max_digits=10, decimal_places=2, verbose_name='USD price')
+    price = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='USD Price')
     order = models.ForeignKey(Order, on_delete=models.CASCADE)
 
     class Meta:
         db_table = 'OrderItem'
 
-    def subtotal(self):
+    def sub_total(self):
         return self.quantity * self.price
 
     def __str__(self):
-        return self.product    
+        return self.product
+    
 
